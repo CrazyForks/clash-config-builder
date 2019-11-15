@@ -198,7 +198,8 @@ function App() {
 }
 
 function RawDrawer(props) {
-  const { title = "", onClose = () => { }, visible = false, onChange = () => { }, value="" } = props
+  const [value, setValue] = useState(props.value)
+  const { title = "", onClose = () => { }, visible = false, onChange = () => { } } = props
   return (
     <Drawer
       title={title}
@@ -207,7 +208,7 @@ function RawDrawer(props) {
       visible={visible}
       width={"70%"}
     >
-      <TextArea rows={30} defaultValue={value} value={value} onPressEnter={() => { }}></TextArea>
+      <TextArea rows={30} onChange={(e) => setValue(e.target.value)} defaultValue={value} onPressEnter={() => { }}></TextArea>
       <Button className="drawer-btn" type="primary" onClick={() => { onChange(value) }}>Save</Button>
     </Drawer>
   )
