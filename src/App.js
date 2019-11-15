@@ -74,10 +74,10 @@ function App() {
     setSyncBtnLoading(false)
   }
 
-  function handleSubURLsChange(e) {
-    let t = e.target.value
+  function handleSubURLsChange(t) {
     setSubsURLs(t)
     setCache(SUB_CONFIG, t)
+    setSubDrawerVisible(false)
   }
 
   function handleProxiesChange(order) {
