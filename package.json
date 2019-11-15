@@ -2,7 +2,7 @@
   "name": "clash-config-builder",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://fndroid.github.io/clash-config-builder",
+  "homepage": ".",
   "dependencies": {
     "antd": "^3.25.1",
     "axios": "^0.19.0",
