@@ -15,11 +15,10 @@ jobs:
       uses: actions/checkout@master
       
     - name: Deploy to GitHub Pages
-      uses: JamesIves/github-pages-deploy-action@2.0.0
+      uses: JamesIves/github-pages-deploy-action@releases/v2
       env:
         ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         BASE_BRANCH: master
         BRANCH: gh-pages
         FOLDER: build
         BUILD_SCRIPT: npm install && npm run build
-        # CNAME: docs.cfw.lbyczf.com
