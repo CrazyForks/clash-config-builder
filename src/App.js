@@ -102,7 +102,7 @@ function App() {
     fileDownload(yaml.stringify({ ...rawObj, 'Proxy': proxies.concat(subProxies) }), 'config.yaml')
   }
 
-  const rawObj = yaml.parse(rawConfig)
+  const rawObj = yaml.parse(rawConfig) || {}
 
   const { 'Proxy Group': gs = [], 'Proxy': ps = [] } = rawObj
   const proxyGroupNames = gs.map((g, idx) => {
