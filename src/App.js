@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Drawer, Input, Button, notification } from 'antd'
 import * as yaml from 'yaml'
 import * as axios from 'axios'
@@ -198,8 +198,13 @@ function App() {
 }
 
 function RawDrawer(props) {
-  const [value, setValue] = useState(props.value)
-  const { title = "", onClose = () => { }, visible = false, onChange = () => { } } = props
+  const { title = "", onClose = () => { }, visible = false, onChange, 'value': v } = props
+  const [value, setValue] = useState(v)
+
+  useEffect(() => {
+    setValue(v)
+  }, [v])
+
   return (
     <Drawer
       title={title}
