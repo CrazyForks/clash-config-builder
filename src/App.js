@@ -1,83 +1,71 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Drawer, Input, Button, notification } from 'antd'
+import { Layout, Menu, Button, notification } from 'antd'
 import * as yaml from 'yaml'
 import * as axios from 'axios'
-import Sortable from 'react-sortablejs';
-import uniqueId from 'lodash/uniqueId';
+
+
+import SharedGroup from './components/sharedGroup'
+import RawDrawer from './components/inputDrawer'
+
+import { setCache, getCache } from "./utils/cache"
 
 import './App.css';
 
 const fileDownload = require('react-file-download')
 
 const { Header, Content, Sider, Footer } = Layout;
-const { TextArea } = Input
 
 const RAW_CONFIG = "raw"
 const SUB_CONFIG = "subs"
 const PROXIES_CONFIG = "proxies"
 
 function App() {
+  const rawConfig = useDrawerInput({ title: "Input raw config.yml", initValue: getCache(RAW_CONFIG) || "", cacheKey: RAW_CONFIG })
+  const { 'setValue': setRawConfig, 'setVisible': setRawDrawerVisible } = rawConfig
+  const subsURLs = useDrawerInput({ title: "Input subscriptions url line by line", initValue: getCache(SUB_CONFIG) || "", cacheKey: SUB_CONFIG })
+  const { 'setVisible': setSubDrawerVisible } = subsURLs
   const [syncBtnLoading, setSyncBtnLoading] = useState(false)
-  const [rawDrawerVisible, setRawDrawerVisible] = useState(false)
-  const [rawConfig, setRawConfig] = useState(getCache(RAW_CONFIG) || "")
-  const [subDrawerVisible, setSubDrawerVisible] = useState(false)
-  const [subsURLs, setSubsURLs] = useState(getCache(SUB_CONFIG) || "")
   const [groupIndex, setGroupIndex] = useState("0")
-  const [subProxies, setSubProxies] = useState(getCache(PROXIES_CONFIG) || [])
 
-  function handleRawConfigChange(t) {
-    const message = "Could not complete!"
+  const [subProxies, setSubProxies] = useState(getCache(PROXIES_CONFIG) || [])
+  useEffect(() => {
+    setCache(PROXIES_CONFIG, subProxies)
+  }, [subProxies])
+
+  const [rawObj, setRawObj] = useState({})
+  useEffect(() => {
+    let obj = {}
     try {
-      let obj = yaml.parse(t)
-      if (obj) {
-        setRawConfig(t)
-        setCache(RAW_CONFIG, t)
-        setRawDrawerVisible(false)
-      } else {
-        notification.error({
-          message,
-          description: "null object"
-        })
-      }
+      obj = yaml.parse(rawConfig.value)
+    } catch{ }
+    setRawObj(obj || {})
+  }, [rawConfig.value])
+
+  async function handleSyncProxies() {
+    setSyncBtnLoading(true)
+    try {
+      const urls = subsURLs.value.split('\n')
+      const resps = await axios.all(urls.map(url => axios.get(url, {
+        validateStatus: _ => true
+      })))
+      let proxies = []
+      resps.forEach(resp => {
+        const { data = "" } = resp
+        let yml = {}
+        try {
+          yml = yaml.parse(data)
+        } catch{ }
+        const { 'Proxy': p = [] } = yml
+        proxies = proxies.concat(p)
+      })
+      setSubProxies(proxies)
     } catch (e) {
       notification.error({
-        message,
-        description: e.stack
+        message: "Sync Error",
+        description: e.stack,
       })
     }
-  }
-
-  async function handleSyncProxies(e) {
-    setSyncBtnLoading(true)
-    const urls = subsURLs.split('\n')
-    const resps = await axios.all(urls.map(url => axios.get(url, {
-      validateStatus: _ => true
-    })))
-    let proxies = []
-    resps.forEach(resp => {
-      const { data = "" } = resp
-      let yml = {}
-      try {
-        yml = yaml.parse(data)
-      } catch{ }
-      const { 'Proxy': p = [] } = yml
-      proxies = proxies.concat(p)
-    })
-    setSubProxies(proxies)
-    setCache(PROXIES_CONFIG, proxies)
-    const rawObj = yaml.parse(rawConfig)
-    const { 'Proxy': rawProxies } = rawObj
-    const allProxies = rawProxies.concat(proxies)
-    const yml = yaml.stringify({ ...rawObj, 'Proxy': allProxies })
-    setRawConfig(yml)
-    setCache(RAW_CONFIG, yml)
     setSyncBtnLoading(false)
-  }
-
-  function handleSubURLsChange(t) {
-    setSubsURLs(t)
-    setCache(SUB_CONFIG, t)
-    setSubDrawerVisible(false)
   }
 
   function handleProxiesChange(order) {
@@ -88,21 +76,16 @@ function App() {
       })
       return
     }
-    const rawObj = yaml.parse(rawConfig)
     let { 'Proxy Group': gs = [] } = rawObj
     gs[groupIndex].proxies = order
     const yml = yaml.stringify({ ...rawObj, 'Proxy Group': gs })
     setRawConfig(yml)
-    setCache(RAW_CONFIG, yml)
   }
 
   function handleDownloadProfile() {
-    const rawObj = yaml.parse(rawConfig)
     const { 'Proxy': proxies = [] } = rawObj
     fileDownload(yaml.stringify({ ...rawObj, 'Proxy': proxies.concat(subProxies) }), 'config.yaml')
   }
-
-  const rawObj = yaml.parse(rawConfig) || {}
 
   const { 'Proxy Group': gs = [], 'Proxy': ps = [] } = rawObj
   const proxyGroupNames = gs.map((g, idx) => {
@@ -169,6 +152,7 @@ function App() {
               <div className="list-title">More</div>
               <SharedGroup
                 items={moreProxies}
+                onChange={() => { }}
               />
             </div>
 
@@ -180,73 +164,41 @@ function App() {
         <Button className="btn" type="primary" icon="download" onClick={handleDownloadProfile}>Download Profile</Button>
       </Footer>
       <RawDrawer
-        title="Input raw config.yml"
-        visible={rawDrawerVisible}
-        value={rawConfig}
-        onClose={() => setRawDrawerVisible(false)}
-        onChange={handleRawConfigChange}
+        {...rawConfig}
       ></RawDrawer>
       <RawDrawer
-        title="Input subscriptions line by line"
-        visible={subDrawerVisible}
-        value={subsURLs}
-        onClose={() => setSubDrawerVisible(false)}
-        onChange={handleSubURLsChange}
+        {...subsURLs}
       ></RawDrawer>
     </Layout>
   );
 }
 
-function RawDrawer(props) {
-  const { title = "", onClose = () => { }, visible = false, onChange, 'value': v } = props
-  const [value, setValue] = useState(v)
+
+function useDrawerInput({ title, initValue, cacheKey }) {
+  const [value, setValue] = useState(initValue)
+  const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    setValue(v)
-  }, [v])
+    if (cacheKey) {
+      setCache(cacheKey, value)
+    }
+  })
 
-  return (
-    <Drawer
-      title={title}
-      placement="right"
-      onClose={onClose}
-      visible={visible}
-      width={"70%"}
-    >
-      <TextArea rows={30} onChange={(e) => setValue(e.target.value)} defaultValue={value} onPressEnter={() => { }}></TextArea>
-      <Button className="drawer-btn" type="primary" onClick={() => { onChange(value) }}>Save</Button>
-    </Drawer>
-  )
+  function handleChange(t) {
+    setVisible(false)
+    setValue(t)
+  }
+
+  return {
+    title,
+    visible,
+    value,
+    onClose: () => setVisible(false),
+    onChange: handleChange,
+    setValue,
+    setVisible,
+  }
 }
 
-function SharedGroup({ items = [], onChange = () => { } }) {
-  const its = items.map(val => (<div className="menu-item" key={uniqueId()} data-id={val}>{val}</div>));
-
-  return (
-    <Sortable
-      options={{
-        group: 'shared',
-        animation: 150,
-      }}
-      onChange={onChange}
-      className="menu"
-    >
-      {its}
-    </Sortable>
-  );
-}
-
-function setCache(key, value) {
-  window.localStorage.setItem(key, JSON.stringify(value))
-}
-
-function getCache(key) {
-  const str = window.localStorage.getItem(key) || ""
-  try {
-    const obj = JSON.parse(str)
-    return obj
-  } catch{ }
-  return str
-}
 
 export default App;
