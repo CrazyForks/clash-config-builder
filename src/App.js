@@ -19,10 +19,12 @@ const RAW_CONFIG = "raw"
 const SUB_CONFIG = "subs"
 const PROXIES_CONFIG = "proxies"
 
+const RULE_TYPES = ["DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN", "DOMAIN-SUFFIX", "IP-CIDR", "GEOIP", "FINAL"]
+
 function App() {
-  const rawConfig = useDrawerInput({ title: "Input raw config.yml", initValue: getCache(RAW_CONFIG) || "", cacheKey: RAW_CONFIG })
+  const rawConfig = useDrawerInput({ title: "Input raw config.yaml", initValue: getCache(RAW_CONFIG) || "", cacheKey: RAW_CONFIG })
   const { 'setValue': setRawConfig, 'setVisible': setRawDrawerVisible } = rawConfig
-  const subsURLs = useDrawerInput({ title: "Input subscriptions url line by line", initValue: getCache(SUB_CONFIG) || "", cacheKey: SUB_CONFIG })
+  const subsURLs = useDrawerInput({ title: "Input subscriptions(.yaml) url line by line", initValue: getCache(SUB_CONFIG) || "", cacheKey: SUB_CONFIG })
   const { 'setVisible': setSubDrawerVisible } = subsURLs
   const [syncBtnLoading, setSyncBtnLoading] = useState(false)
   const [groupIndex, setGroupIndex] = useState("0")
@@ -82,9 +84,50 @@ function App() {
     setRawConfig(yml)
   }
 
-  function handleDownloadProfile() {
-    const { 'Proxy': proxies = [] } = rawObj
-    fileDownload(yaml.stringify({ ...rawObj, 'Proxy': proxies.concat(subProxies) }), 'config.yaml')
+  async function handleDownloadProfile() {
+    const { 'Proxy': proxies = [], 'Proxy Group': groups = [], 'Rule': rules = [] } = rawObj
+    let finalRules = []
+    for (let rule of rules) {
+      const ps = rule.split(',').map(p => p.trim())
+      const [type, url, proxy] = ps
+      if (type === 'RULE-SET') {
+        const resp = await axios.get(url)
+        const { status, data } = resp
+        if (status === 200) {
+          const lines = data.split('\n')
+          finalRules = [...finalRules, ...lines.map(l => {
+            const [type, payload, args] = l.split(',').map(p => p.trim())
+            if (!RULE_TYPES.includes(type)) return null;
+            let res = `${type},${payload},${proxy}`
+            if (args === 'no-resolve') {
+              res += ",no-resolve"
+            }
+            return res
+          }).filter(r => r)]
+        }
+      } else {
+        finalRules = [...finalRules, rule]
+      }
+    }
+    const finalProxies = proxies.concat(subProxies)
+    const allProxyNames = [
+      ...finalProxies.map(p => p.name),
+      ...groups.map(g => g.name),
+      ...["DIRECT", "REJECT", "GLOBAL"]
+    ]
+    for (let [idx, g] of groups.entries()) {
+      for (let ps of g.proxies) {
+        if (!allProxyNames.includes(ps)) {
+          notification.error({
+            message: "Proxy Missing",
+            description: `Group [${g.name}] contains a not exist proxy [${ps}]`,
+          })
+          setGroupIndex(idx + "")
+          return 
+        }
+      }
+    }
+    fileDownload(yaml.stringify({ ...rawObj, 'Proxy': finalProxies, 'Rule': finalRules }), 'config.yaml')
   }
 
   const { 'Proxy Group': gs = [], 'Proxy': ps = [] } = rawObj
@@ -104,7 +147,7 @@ function App() {
     'GLOBAL',
     'REJECT',
     ...gs.map(g => g.name),
-    ...(ps ? ps.map(p => p.name) : []),
+    ...ps.map(p => p.name),
     ...subProxies.map(p => p.name)
   ].filter(p => {
     return !groupProxies.includes(p)
@@ -121,7 +164,7 @@ function App() {
           style={{ lineHeight: '64px' }}
         >
           <Menu.Item key="1">Proxy Group</Menu.Item>
-          <Menu.Item key="2" onClick={() => setRawDrawerVisible(true)}>Raw Config.yml</Menu.Item>
+          <Menu.Item key="2" onClick={() => setRawDrawerVisible(true)}>Raw Config.yaml</Menu.Item>
           <Menu.Item key="3" onClick={() => setSubDrawerVisible(true)}>Subscription</Menu.Item>
         </Menu>
       </Header>
