@@ -5,7 +5,7 @@ Clash配置文件在线定义
 在线地址：https://fndroid.github.io/clash-config-builder/
 
 ### 注意
-**服务商提供的Clash配置地址一般会被[CORS](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Access_control_CORS)，所以默认情况下此工具会通过API代理其请求，如担心隐私问题，请勿使用！！！**
+**服务商提供的Clash配置地址一般会被[CORS](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Access_control_CORS)，所以默认情况下此工具会通过API代理其请求，如担心隐私问题，请使用[Local Mode](#local-mode)！！！**
 
 
 ### 使用步骤
