@@ -46,7 +46,7 @@ function App() {
   async function handleSyncProxies() {
     setSyncBtnLoading(true)
     try {
-      const urls = subsURLs.value.split('\n')
+      const urls = subsURLs.value.split('\n').filter(url => /^https?:\/\//.test(url))
       const resps = await axios.all(urls.map(url => axios.get(`https://cloudcompute.lbyczf.com/proxy-content?url=${encodeURIComponent(url)}`, {
         validateStatus: _ => true
       })))
