@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Button, notification } from 'antd'
+import { Layout, Menu, Button, notification, Empty, Tag } from 'antd'
 import * as yaml from 'yaml'
 import * as axios from 'axios'
 
@@ -21,6 +21,14 @@ const PROXIES_CONFIG = "proxies"
 
 const RULE_TYPES = ["DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN", "DOMAIN-SUFFIX", "IP-CIDR", "GEOIP", "FINAL"]
 
+const localPort = 54637
+const client = axios.create({
+  baseURL: `http://127.0.0.1:${localPort}`,
+  headers: {
+    'content-type': 'application/x-www-form-urlencoded'
+  }
+})
+
 function App() {
   const rawConfig = useDrawerInput({ title: "Input raw config.yaml", initValue: getCache(RAW_CONFIG) || "", cacheKey: RAW_CONFIG })
   const { 'setValue': setRawConfig, 'setVisible': setRawDrawerVisible } = rawConfig
@@ -28,6 +36,13 @@ function App() {
   const { 'setVisible': setSubDrawerVisible } = subsURLs
   const [syncBtnLoading, setSyncBtnLoading] = useState(false)
   const [groupIndex, setGroupIndex] = useState("0")
+
+  const [isLocalMode, setIsLocalMode] = useState(false)
+  useEffect(() => {
+    client.get('/ping').then(({ data = "", status }) => {
+      setIsLocalMode (status === 200 && data === "pong")
+    })
+  }, [])
 
   const [subProxies, setSubProxies] = useState(getCache(PROXIES_CONFIG) || [])
   useEffect(() => {
@@ -44,15 +59,29 @@ function App() {
   }, [rawConfig.value])
 
   async function handleSyncProxies() {
+    const request = async url => {
+      try {
+        let resp = await axios.get(url)
+        return resp.data
+      } catch {
+        return ""
+      }
+    }
+
     setSyncBtnLoading(true)
     try {
       const urls = subsURLs.value.split('\n').filter(url => /^https?:\/\//.test(url))
-      const resps = await axios.all(urls.map(url => axios.get(`https://cloudcompute.lbyczf.com/proxy-content?url=${encodeURIComponent(url)}`, {
-        validateStatus: _ => true
-      })))
+      const proxyURL = isLocalMode ? `http://127.0.0.1:${localPort}/proxy?url=` : "https://cloudcompute.lbyczf.com/proxy-content?url="
+      const resps = await axios.all(urls.map(url => request(`${proxyURL}${encodeURIComponent(url)}`)))
       let proxies = []
-      resps.forEach(resp => {
-        const { data = "" } = resp
+      resps.forEach((data, index) => {
+        if (data === "") {
+          notification.error({
+            message: "Could not download from subscription",
+            description: urls[index]
+          })
+          return
+        }
         let yml = {}
         try {
           yml = yaml.parse(data)
@@ -123,11 +152,24 @@ function App() {
             description: `Group [${g.name}] contains a not exist proxy [${ps}]`,
           })
           setGroupIndex(idx + "")
-          return 
+          return
         }
       }
     }
-    fileDownload(yaml.stringify({ ...rawObj, 'Proxy': finalProxies, 'Rule': finalRules }), 'config.yaml')
+    const fileName = 'config.yml'
+    const fileContent = yaml.stringify({ ...rawObj, 'Proxy': finalProxies, 'Rule': finalRules })
+    if (isLocalMode) {
+      const { 'status': s } = await client({
+        method: "post",
+        url: "/config",
+        data: "config=" + encodeURIComponent(fileContent)
+      })
+      if (s === 204) {
+        window.location.href = `clash://install-config?url=${encodeURIComponent(`http://127.0.0.1:${localPort}/config`)}`
+      }
+    } else {
+      fileDownload(fileContent, fileName)
+    }
   }
 
   const { 'Proxy Group': gs = [], 'Proxy': ps = [] } = rawObj
@@ -156,7 +198,6 @@ function App() {
   return (
     <Layout className="main">
       <Header className="header">
-        <div className="logo" />
         <Menu
           theme="dark"
           mode="horizontal"
@@ -185,6 +226,7 @@ function App() {
           >
             <div className="list">
               <div className="list-title">Proxies</div>
+              <Empty hidden={groupProxies.length !== 0} />
               <SharedGroup
                 items={groupProxies}
                 onChange={handleProxiesChange}
@@ -205,6 +247,7 @@ function App() {
       <Footer className="footer">
         <Button className="btn" loading={syncBtnLoading} icon="cloud-download" onClick={handleSyncProxies}>Sync Proxies</Button>
         <Button className="btn" type="primary" icon="download" onClick={handleDownloadProfile}>Download Profile</Button>
+        <Tag className="mode-tag" color={isLocalMode ? "green" : "volcano"}>{`${isLocalMode ? "Local" : "Remote"} Mode`}</Tag>
       </Footer>
       <RawDrawer
         {...rawConfig}
