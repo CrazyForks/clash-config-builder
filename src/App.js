@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Button, notification, Empty, Tag } from 'antd'
+import { Layout, Menu, Button, notification, Empty, Tag, message } from 'antd'
 import * as yaml from 'yaml'
 import * as axios from 'axios'
 
@@ -40,7 +40,7 @@ function App() {
   const [isLocalMode, setIsLocalMode] = useState(false)
   useEffect(() => {
     client.get('/ping').then(({ data = "", status }) => {
-      setIsLocalMode (status === 200 && data === "pong")
+      setIsLocalMode(status === 200 && data === "pong")
     })
   }, [])
 
@@ -120,19 +120,27 @@ function App() {
       const ps = rule.split(',').map(p => p.trim())
       const [type, url, proxy] = ps
       if (type === 'RULE-SET') {
-        const resp = await axios.get(url)
-        const { status, data } = resp
-        if (status === 200) {
-          const lines = data.split('\n')
-          finalRules = [...finalRules, ...lines.map(l => {
-            const [type, payload, args] = l.split(',').map(p => p.trim())
-            if (!RULE_TYPES.includes(type)) return null;
-            let res = `${type},${payload},${proxy}`
-            if (args === 'no-resolve') {
-              res += ",no-resolve"
-            }
-            return res
-          }).filter(r => r)]
+        try {
+          const resp = await axios.get(url)
+          const { status, data } = resp
+          if (status === 200) {
+            const lines = data.split('\n')
+            finalRules = [...finalRules, ...lines.map(l => {
+              const [type, payload, args] = l.split(',').map(p => p.trim())
+              if (!RULE_TYPES.includes(type)) return null;
+              let res = `${type},${payload},${proxy}`
+              if (args === 'no-resolve') {
+                res += ",no-resolve"
+              }
+              return res
+            }).filter(r => r)]
+          }
+        } catch {
+          notification.error({
+            message: "Ruleset download failed",
+            description: url
+          })
+          return
         }
       } else {
         finalRules = [...finalRules, rule]
@@ -147,10 +155,7 @@ function App() {
     for (let [idx, g] of groups.entries()) {
       for (let ps of g.proxies) {
         if (!allProxyNames.includes(ps)) {
-          notification.error({
-            message: "Proxy Missing",
-            description: `Group [${g.name}] contains a not exist proxy [${ps}]`,
-          })
+          message.error(`Group [${g.name}] contains a not exist proxy [${ps}]`, 5)
           setGroupIndex(idx + "")
           return
         }
