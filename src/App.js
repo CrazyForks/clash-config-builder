@@ -210,8 +210,9 @@ function App() {
           style={{ lineHeight: '64px' }}
         >
           <Menu.Item key="1">Proxy Group</Menu.Item>
-          <Menu.Item key="2" onClick={() => setRawDrawerVisible(true)}>Raw Config.yaml</Menu.Item>
+          <Menu.Item key="2" onClick={() => setRawDrawerVisible(true)}>Raw Config</Menu.Item>
           <Menu.Item key="3" onClick={() => setSubDrawerVisible(true)}>Subscription</Menu.Item>
+          <Menu.Item key="4" onClick={() => window.location.href="https://github.com/Fndroid/clash-config-builder"}>Document</Menu.Item>
         </Menu>
       </Header>
       <Layout>
