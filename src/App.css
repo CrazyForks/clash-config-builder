@@ -52,6 +52,12 @@
   margin-bottom: 10px;
 }
 
+.filter-input {
+  margin-top: 10px;
+  width: calc(100% - 20px);
+  height: 40px;
+}
+
 .drawer-btn {
   margin: 10px auto;
   width: 100%;

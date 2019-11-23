@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Button, notification, Empty, Tag, message } from 'antd'
-import * as yaml from 'yaml'
-import * as axios from 'axios'
+import { Layout, Menu, Button, notification, Empty, Tag, message, Input } from 'antd'
+import { parse as ymlParse, stringify as ymlStringify } from 'yaml'
+import { get, all, create } from 'axios'
 
 
 import SharedGroup from './components/sharedGroup'
@@ -22,7 +22,7 @@ const PROXIES_CONFIG = "proxies"
 const RULE_TYPES = ["DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN", "DOMAIN-SUFFIX", "IP-CIDR", "GEOIP", "FINAL"]
 
 const localPort = 54637
-const client = axios.create({
+const client = create({
   baseURL: `http://127.0.0.1:${localPort}`,
   headers: {
     'content-type': 'application/x-www-form-urlencoded'
@@ -36,6 +36,7 @@ function App() {
   const { 'setVisible': setSubDrawerVisible } = subsURLs
   const [syncBtnLoading, setSyncBtnLoading] = useState(false)
   const [groupIndex, setGroupIndex] = useState("0")
+  const [moreFileterStr, setMoreFilterStr] = useState("")
 
   const [isLocalMode, setIsLocalMode] = useState(false)
   useEffect(() => {
@@ -53,7 +54,7 @@ function App() {
   useEffect(() => {
     let obj = {}
     try {
-      obj = yaml.parse(rawConfig.value)
+      obj = ymlParse(rawConfig.value)
     } catch{ }
     setRawObj(obj || {})
   }, [rawConfig.value])
@@ -61,7 +62,7 @@ function App() {
   async function handleSyncProxies() {
     const request = async url => {
       try {
-        let resp = await axios.get(url)
+        let resp = await get(url)
         return resp.data
       } catch {
         return ""
@@ -72,7 +73,7 @@ function App() {
     try {
       const urls = subsURLs.value.split('\n').filter(url => /^https?:\/\//.test(url))
       const proxyURL = isLocalMode ? `http://127.0.0.1:${localPort}/proxy?url=` : "https://cloudcompute.lbyczf.com/proxy-content?url="
-      const resps = await axios.all(urls.map(url => request(`${proxyURL}${encodeURIComponent(url)}`)))
+      const resps = await all(urls.map(url => request(`${proxyURL}${encodeURIComponent(url)}`)))
       let proxies = []
       resps.forEach((data, index) => {
         if (data === "") {
@@ -84,7 +85,7 @@ function App() {
         }
         let yml = {}
         try {
-          yml = yaml.parse(data)
+          yml = ymlParse(data)
         } catch{ }
         const { 'Proxy': p = [] } = yml
         proxies = proxies.concat(p)
@@ -109,8 +110,13 @@ function App() {
     }
     let { 'Proxy Group': gs = [] } = rawObj
     gs[groupIndex].proxies = order
-    const yml = yaml.stringify({ ...rawObj, 'Proxy Group': gs })
+    const yml = ymlStringify({ ...rawObj, 'Proxy Group': gs })
     setRawConfig(yml)
+  }
+
+  function handleMoreFilterChange(e) {
+    const { value } = e.target
+    setMoreFilterStr(value)
   }
 
   async function handleDownloadProfile() {
@@ -121,7 +127,7 @@ function App() {
       const [type, url, proxy] = ps
       if (type === 'RULE-SET') {
         try {
-          const resp = await axios.get(url)
+          const resp = await get(url)
           const { status, data } = resp
           if (status === 200) {
             const lines = data.split('\n')
@@ -162,7 +168,7 @@ function App() {
       }
     }
     const fileName = 'config.yml'
-    const fileContent = yaml.stringify({ ...rawObj, 'Proxy': finalProxies, 'Rule': finalRules })
+    const fileContent = ymlStringify({ ...rawObj, 'Proxy': finalProxies, 'Rule': finalRules })
     if (isLocalMode) {
       const { 'status': s } = await client({
         method: "post",
@@ -197,7 +203,11 @@ function App() {
     ...ps.map(p => p.name),
     ...subProxies.map(p => p.name)
   ].filter(p => {
-    return !groupProxies.includes(p)
+    let exp = /^/
+    try {
+      exp = new RegExp(moreFileterStr)
+    } catch {}
+    return !groupProxies.includes(p) && exp.test(p)
   })
 
   return (
@@ -212,7 +222,7 @@ function App() {
           <Menu.Item key="1">Proxy Group</Menu.Item>
           <Menu.Item key="2" onClick={() => setRawDrawerVisible(true)}>Raw Config</Menu.Item>
           <Menu.Item key="3" onClick={() => setSubDrawerVisible(true)}>Subscription</Menu.Item>
-          <Menu.Item key="4" onClick={() => window.location.href="https://github.com/Fndroid/clash-config-builder"}>Document</Menu.Item>
+          <Menu.Item key="4" onClick={() => window.location.href = "https://github.com/Fndroid/clash-config-builder"}>Github</Menu.Item>
         </Menu>
       </Header>
       <Layout>
@@ -245,6 +255,12 @@ function App() {
                 items={moreProxies}
                 onChange={() => { }}
               />
+              <Input
+                className="filter-input"
+                placeholder="flter by regular expression"
+                value={moreFileterStr}
+                onChange={handleMoreFilterChange}
+              ></Input>
             </div>
 
           </Content>
