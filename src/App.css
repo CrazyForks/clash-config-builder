@@ -31,13 +31,14 @@
 }
 
 .btn {
-  margin: 0 20px;
+  margin: 0 10px;
 }
 
 .footer {
   display: flex;
   justify-content: center;
   background-color: #dee1e6;
+  align-items: center;
 }
 
 .list {
@@ -65,4 +66,5 @@
 
 .mode-tag {
   line-height: 30px;
+  cursor: not-allowed;
 }

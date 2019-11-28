@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Button, notification, Empty, Tag, message, Input } from 'antd'
+import { Layout, Menu, Button, notification, Empty, Tag, message, Input, Checkbox } from 'antd'
 import { parse as ymlParse, stringify as ymlStringify } from 'yaml'
 import { get, all, create } from 'axios'
 
@@ -18,6 +18,7 @@ const { Header, Content, Sider, Footer } = Layout;
 const RAW_CONFIG = "raw"
 const SUB_CONFIG = "subs"
 const PROXIES_CONFIG = "proxies"
+const IS_FLAT_RULESET = "isFlatRules"
 
 const RULE_TYPES = ["DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN", "DOMAIN-SUFFIX", "IP-CIDR", "GEOIP", "FINAL"]
 
@@ -58,6 +59,8 @@ function App() {
     } catch{ }
     setRawObj(obj || {})
   }, [rawConfig.value])
+
+  const [isFlatRuleset, setIsFlatRuleset] = useState(getCache(IS_FLAT_RULESET) === "" ? true : getCache(IS_FLAT_RULESET))
 
   async function handleSyncProxies() {
     const request = async url => {
@@ -119,13 +122,19 @@ function App() {
     setMoreFilterStr(value)
   }
 
+  function handleIsFlatRulesetChange(e) {
+    const { checked = true } = e.target
+    setIsFlatRuleset(checked)
+    setCache(IS_FLAT_RULESET, checked)
+  }
+
   async function handleDownloadProfile() {
     const { 'Proxy': proxies = [], 'Proxy Group': groups = [], 'Rule': rules = [] } = rawObj
     let finalRules = []
     for (let rule of rules) {
       const ps = rule.split(',').map(p => p.trim())
       const [type, url, proxy] = ps
-      if (type === 'RULE-SET') {
+      if (type === 'RULE-SET' && isFlatRuleset) {
         try {
           const resp = await get(url)
           const { status, data } = resp
@@ -206,7 +215,7 @@ function App() {
     let exp = /^/
     try {
       exp = new RegExp(moreFileterStr)
-    } catch {}
+    } catch { }
     return !groupProxies.includes(p) && exp.test(p)
   })
 
@@ -269,13 +278,15 @@ function App() {
       <Footer className="footer">
         <Button className="btn" loading={syncBtnLoading} icon="cloud-download" onClick={handleSyncProxies}>Sync Proxies</Button>
         <Button className="btn" type="primary" icon="download" onClick={handleDownloadProfile}>Download Profile</Button>
-        <Tag className="mode-tag" color={isLocalMode ? "green" : "volcano"}>{`${isLocalMode ? "Local" : "Remote"} Mode`}</Tag>
+        <Checkbox className='btn' checked={isFlatRuleset} onChange={handleIsFlatRulesetChange}>Flat Ruleset</Checkbox>
+        <Tag className="btn mode-tag" color={isLocalMode ? "green" : "volcano"}>{`${isLocalMode ? "Local" : "Remote"} Mode`}</Tag>
       </Footer>
       <RawDrawer
         {...rawConfig}
       ></RawDrawer>
       <RawDrawer
         {...subsURLs}
+        isHieghtlight={false}
       ></RawDrawer>
     </Layout>
   );
