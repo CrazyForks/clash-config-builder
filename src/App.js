@@ -31,9 +31,9 @@ const client = create({
 })
 
 function App() {
-  const rawConfig = useDrawerInput({ title: "Input raw config.yaml", initValue: getCache(RAW_CONFIG) || "", cacheKey: RAW_CONFIG })
+  const rawConfig = useDrawerInput({ title: "Input raw config.yaml", cacheKey: RAW_CONFIG })
   const { 'setValue': setRawConfig, 'setVisible': setRawDrawerVisible } = rawConfig
-  const subsURLs = useDrawerInput({ title: "Input subscriptions(.yaml) url line by line", initValue: getCache(SUB_CONFIG) || "", cacheKey: SUB_CONFIG })
+  const subsURLs = useDrawerInput({ title: "Input subscriptions(.yaml) url line by line", cacheKey: SUB_CONFIG })
   const { 'setVisible': setSubDrawerVisible } = subsURLs
   const [syncBtnLoading, setSyncBtnLoading] = useState(false)
   const [groupIndex, setGroupIndex] = useState("0")
@@ -46,10 +46,8 @@ function App() {
     })
   }, [])
 
-  const [subProxies, setSubProxies] = useState(getCache(PROXIES_CONFIG) || [])
-  useEffect(() => {
-    setCache(PROXIES_CONFIG, subProxies)
-  }, [subProxies])
+  const [subProxies, setSubProxies] = useLocalStorage(PROXIES_CONFIG, [])
+  const [isFlatRuleset, setIsFlatRuleset] = useLocalStorage(IS_FLAT_RULESET, true)
 
   const [rawObj, setRawObj] = useState({})
   useEffect(() => {
@@ -59,8 +57,6 @@ function App() {
     } catch{ }
     setRawObj(obj || {})
   }, [rawConfig.value])
-
-  const [isFlatRuleset, setIsFlatRuleset] = useState(getCache(IS_FLAT_RULESET) === "" ? true : getCache(IS_FLAT_RULESET))
 
   async function handleSyncProxies() {
     const request = async url => {
@@ -125,7 +121,6 @@ function App() {
   function handleIsFlatRulesetChange(e) {
     const { checked = true } = e.target
     setIsFlatRuleset(checked)
-    setCache(IS_FLAT_RULESET, checked)
   }
 
   async function handleDownloadProfile() {
@@ -269,6 +264,7 @@ function App() {
                 placeholder="flter by regular expression"
                 value={moreFileterStr}
                 onChange={handleMoreFilterChange}
+                allowClear 
               ></Input>
             </div>
 
@@ -292,16 +288,21 @@ function App() {
   );
 }
 
+function useLocalStorage(key, initValue) {
+  const c = getCache(key)
+  const [value, setValue] = useState(c === null ? initValue : c)
 
-function useDrawerInput({ title, initValue, cacheKey }) {
-  const [value, setValue] = useState(initValue)
+  function setValueCache(val) {
+    setValue(val)
+    setCache(key, val)
+  }
+
+  return [value, setValueCache]
+}
+
+function useDrawerInput({ title, initValue="", cacheKey }) {
+  const [value, setValue] = useLocalStorage(cacheKey, initValue)
   const [visible, setVisible] = useState(false)
-
-  useEffect(() => {
-    if (cacheKey) {
-      setCache(cacheKey, value)
-    }
-  })
 
   function handleChange(t) {
     setVisible(false)
@@ -312,7 +313,6 @@ function useDrawerInput({ title, initValue, cacheKey }) {
     title,
     visible,
     value,
-    onClose: () => setVisible(false),
     onChange: handleChange,
     setValue,
     setVisible,

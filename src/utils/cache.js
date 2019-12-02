@@ -3,7 +3,7 @@ function setCache(key, value) {
 }
 
 function getCache(key) {
-    const str = window.localStorage.getItem(key) || ""
+    const str = window.localStorage.getItem(key)
     try {
         const obj = JSON.parse(str)
         return obj

@@ -4,11 +4,11 @@ import { highlight, languages } from 'prismjs/components/prism-core';
 import 'prismjs/components/prism-yaml';
 import 'prismjs/components/prism-json'
 import 'prismjs/themes/prism-okaidia.css'
-import { Drawer, Button } from 'antd'
+import { Drawer } from 'antd'
 
 
 export default function (props) {
-    const { title = "", onClose = () => { }, visible = false, onChange, 'value': v, isHieghtlight = true } = props
+    const { title = "", visible = false, onChange, 'value': v, isHieghtlight = true } = props
     const [value, setValue] = useState(v)
 
     useEffect(() => {
@@ -19,7 +19,7 @@ export default function (props) {
         <Drawer
             title={title}
             placement="right"
-            onClose={onClose}
+            onClose={() => onChange(value)}
             visible={visible}
             width={"84%"}
         >
@@ -31,13 +31,11 @@ export default function (props) {
                 style={{
                     fontFamily: '"Fira code", "Fira Mono", monospace',
                     fontSize: 14,
-                    // border: "1px solid gray",
                     borderRadius: 5,
                     backgroundColor: "rgb(40, 44, 52)",
                     color: "#ffffff"
                 }}
             />
-            <Button className="drawer-btn" type="primary" onClick={() => { onChange(value) }}>Save</Button>
         </Drawer>
     )
 }
