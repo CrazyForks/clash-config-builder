@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Button, notification, Empty, Tag, message, Input, Checkbox } from 'antd'
+import { Layout, Menu, Button, notification, Empty, Tag, message, Input, Checkbox, Badge } from 'antd'
 import { parse as ymlParse, stringify as ymlStringify } from 'yaml'
 import { get, all, create } from 'axios'
 
@@ -245,7 +245,9 @@ function App() {
             className="content"
           >
             <div className="list">
-              <div className="list-title">Proxies</div>
+              <Badge count={groupProxies.length} overflowCount={2000} offset={[20,0]} style={{ backgroundColor: '#f50' }}>
+                <div className="list-title">Proxies</div>
+              </Badge>
               <Empty hidden={groupProxies.length !== 0} />
               <SharedGroup
                 items={groupProxies}
@@ -254,7 +256,9 @@ function App() {
             </div>
 
             <div className="list">
-              <div className="list-title">More</div>
+              <Badge count={moreProxies.length} overflowCount={2000} offset={[20,0]} style={{ backgroundColor: '#52c41a' }}>
+                <div className="list-title">More</div>
+              </Badge>
               <SharedGroup
                 items={moreProxies}
                 onChange={() => { }}

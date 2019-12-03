@@ -24,10 +24,10 @@
 .menu-item {
   font-size: 1.1em;
   background-color: #fff;
-  margin-bottom: 10px;
-  min-width: 20vw;
-  max-width: 30vw;
-  padding: 5px 10px;
+  margin: 0 10px 10px 5px;
+  min-width: 15vw;
+  padding: 7px 10px;
+  box-shadow: 1px 1px 2px 1px rgba(0, 21, 41, 0.02);
 }
 
 .btn {
