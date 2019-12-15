@@ -226,7 +226,7 @@ function App() {
           <Menu.Item key="1">Proxy Group</Menu.Item>
           <Menu.Item key="2" onClick={() => setRawDrawerVisible(true)}>Raw Config</Menu.Item>
           <Menu.Item key="3" onClick={() => setSubDrawerVisible(true)}>Subscription</Menu.Item>
-          <Menu.Item key="4" onClick={() => window.location.href = "https://github.com/Fndroid/clash-config-builder"}>Github</Menu.Item>
+          <Menu.Item key="4" onClick={() => window.open("https://github.com/Fndroid/clash-config-builder", "_blank")}>Github</Menu.Item>
         </Menu>
       </Header>
       <Layout>
@@ -245,7 +245,7 @@ function App() {
             className="content"
           >
             <div className="list">
-              <Badge count={groupProxies.length} overflowCount={2000} offset={[20,0]} style={{ backgroundColor: '#f50' }}>
+              <Badge count={groupProxies.length} overflowCount={2000} offset={[20, 0]} style={{ backgroundColor: '#f50' }}>
                 <div className="list-title">Proxies</div>
               </Badge>
               <Empty hidden={groupProxies.length !== 0} />
@@ -256,7 +256,7 @@ function App() {
             </div>
 
             <div className="list">
-              <Badge count={moreProxies.length} overflowCount={2000} offset={[20,0]} style={{ backgroundColor: '#52c41a' }}>
+              <Badge count={moreProxies.length} overflowCount={2000} offset={[20, 0]} style={{ backgroundColor: '#52c41a' }}>
                 <div className="list-title">More</div>
               </Badge>
               <SharedGroup
@@ -268,7 +268,7 @@ function App() {
                 placeholder="flter by regular expression"
                 value={moreFileterStr}
                 onChange={handleMoreFilterChange}
-                allowClear 
+                allowClear
               ></Input>
             </div>
 
@@ -304,7 +304,7 @@ function useLocalStorage(key, initValue) {
   return [value, setValueCache]
 }
 
-function useDrawerInput({ title, initValue="", cacheKey }) {
+function useDrawerInput({ title, initValue = "", cacheKey }) {
   const [value, setValue] = useLocalStorage(cacheKey, initValue)
   const [visible, setVisible] = useState(false)
 
