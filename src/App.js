@@ -189,8 +189,9 @@ function App() {
 
   const { 'Proxy Group': gs = [], 'Proxy': ps = [] } = rawObj
   const proxyGroupNames = gs.map((g, idx) => {
+    const { use } = g
     return (
-      <Menu.Item key={idx}>{g.name}</Menu.Item>
+      <Menu.Item disabled={use} key={idx}>{g.name}</Menu.Item>
     )
   })
 
