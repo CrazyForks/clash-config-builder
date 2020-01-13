@@ -100,13 +100,6 @@ function App() {
   }
 
   function handleProxiesChange(order) {
-    if (order.length <= 0) {
-      notification.error({
-        message: "Could not complete!",
-        description: "Proxy Group shold have more than one proxies."
-      })
-      return
-    }
     let { 'Proxy Group': gs = [] } = rawObj
     gs[groupIndex].proxies = order
     const yml = ymlStringify({ ...rawObj, 'Proxy Group': gs })
@@ -163,7 +156,8 @@ function App() {
       ...["DIRECT", "REJECT", "GLOBAL"]
     ]
     for (let [idx, g] of groups.entries()) {
-      for (let ps of g.proxies) {
+      const { proxies = [] } = g
+      for (let ps of proxies) {
         if (!allProxyNames.includes(ps)) {
           message.error(`Group [${g.name}] contains a not exist proxy [${ps}]`, 5)
           setGroupIndex(idx + "")
@@ -191,13 +185,14 @@ function App() {
   const proxyGroupNames = gs.map((g, idx) => {
     const { use } = g
     return (
-      <Menu.Item disabled={use} key={idx}>{g.name}</Menu.Item>
+      <Menu.Item key={idx}>{g.name}</Menu.Item>
     )
   })
 
   let groupProxies = []
   if (groupIndex < gs.length) {
-    groupProxies = gs[groupIndex * 1].proxies
+    const { proxies = [] } = gs[groupIndex * 1]
+    groupProxies = proxies
   }
 
   const moreProxies = [
@@ -249,7 +244,7 @@ function App() {
               <Badge count={groupProxies.length} overflowCount={2000} offset={[20, 0]} style={{ backgroundColor: '#f50' }}>
                 <div className="list-title">Proxies</div>
               </Badge>
-              <Empty hidden={groupProxies.length !== 0} />
+              {/* <Empty hidden={groupProxies.length !== 0} /> */}
               <SharedGroup
                 items={groupProxies}
                 onChange={handleProxiesChange}
