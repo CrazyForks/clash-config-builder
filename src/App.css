@@ -71,3 +71,7 @@
   line-height: 30px;
   cursor: not-allowed;
 }
+
+.input {
+  width: 200px;
+}

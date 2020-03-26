@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Button, notification, Empty, Tag, message, Input, Checkbox, Badge } from 'antd'
 import { parse as ymlParse, stringify as ymlStringify } from 'yaml'
-import { get, all, create } from 'axios'
+import { get, all, create, put } from 'axios'
 
 
 import SharedGroup from './components/sharedGroup'
@@ -19,6 +19,7 @@ const RAW_CONFIG = "raw"
 const SUB_CONFIG = "subs"
 const PROXIES_CONFIG = "proxies"
 const IS_FLAT_RULESET = "isFlatRules"
+const CLASHRESTFULAPI = "clashAPI"
 
 const RULE_TYPES = ["DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN", "DOMAIN-SUFFIX", "IP-CIDR", "GEOIP", "FINAL"]
 
@@ -43,11 +44,12 @@ function App() {
   useEffect(() => {
     client.get('/ping').then(({ data = "", status }) => {
       setIsLocalMode(status === 200 && data === "pong")
-    })
+    }).catch(_ => { })
   }, [])
 
   const [subProxies, setSubProxies] = useLocalStorage(PROXIES_CONFIG, [])
   const [isFlatRuleset, setIsFlatRuleset] = useLocalStorage(IS_FLAT_RULESET, true)
+  const [clashAPI, setClashAPI] = useLocalStorage(CLASHRESTFULAPI, "")
 
   const [rawObj, setRawObj] = useState({})
   useEffect(() => {
@@ -116,6 +118,11 @@ function App() {
     setIsFlatRuleset(checked)
   }
 
+  function handleClashAPIChange(e) {
+    const { value = "" } = e.target
+    setClashAPI(value)
+  }
+
   async function handleDownloadProfile() {
     const { 'Proxy': proxies = [], 'Proxy Group': groups = [], 'Rule': rules = [] } = rawObj
     let finalRules = []
@@ -175,6 +182,19 @@ function App() {
       })
       if (s === 204) {
         window.location.href = `clash://install-config?url=${encodeURIComponent(`http://127.0.0.1:${localPort}/config`)}`
+      }
+    } else if (clashAPI) {
+      try {
+        await put(`${clashAPI}/configs`, { payload: fileContent }, { validateStatus: s => s !== 200 })
+        notification.success({
+          message: "Done",
+          description: "Enjoy your free time."
+        })
+      } catch (e) {
+        notification.info({
+          message: "Could not write profile to Clash",
+          description: e.stack
+        })
       }
     } else {
       fileDownload(fileContent, fileName)
@@ -276,6 +296,7 @@ function App() {
         <Button className="btn" type="primary" icon="download" onClick={handleDownloadProfile}>Download Profile</Button>
         <Checkbox className='btn' checked={isFlatRuleset} onChange={handleIsFlatRulesetChange}>Flat Ruleset</Checkbox>
         <Tag className="btn mode-tag" color={isLocalMode ? "green" : "volcano"}>{`${isLocalMode ? "Local" : "Remote"} Mode`}</Tag>
+        <Input value={clashAPI} className="input" placeholder="http://127.0.0.1:9090" onChange={handleClashAPIChange} ></Input>
       </Footer>
       <RawDrawer
         {...rawConfig}
