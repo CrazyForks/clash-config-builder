@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Button, notification, Empty, Tag, message, Input, Checkbox, Badge } from 'antd'
+import { Layout, Menu, Button, notification, Tag, message, Input, Checkbox, Badge } from 'antd'
 import { parse as ymlParse, stringify as ymlStringify } from 'yaml'
 import { get, all, create, put } from 'axios'
 
@@ -22,6 +22,10 @@ const IS_FLAT_RULESET = "isFlatRules"
 const CLASHRESTFULAPI = "clashAPI"
 
 const RULE_TYPES = ["DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN", "DOMAIN-SUFFIX", "IP-CIDR", "GEOIP", "FINAL"]
+
+const PROXY_KEY = "proxies"
+const GROUP_KEY = "proxy-groups"
+const RULE_KEY = "rules"
 
 const localPort = 54637
 const client = create({
@@ -88,7 +92,7 @@ function App() {
         try {
           yml = ymlParse(data)
         } catch{ }
-        const { 'Proxy': p = [] } = yml
+        const { [PROXY_KEY]: p = [] } = yml
         proxies = proxies.concat(p)
       })
       setSubProxies(proxies)
@@ -102,9 +106,9 @@ function App() {
   }
 
   function handleProxiesChange(order) {
-    let { 'Proxy Group': gs = [] } = rawObj
+    let { [GROUP_KEY]: gs = [] } = rawObj
     gs[groupIndex].proxies = order
-    const yml = ymlStringify({ ...rawObj, 'Proxy Group': gs })
+    const yml = ymlStringify({ ...rawObj, [GROUP_KEY]: gs })
     setRawConfig(yml)
   }
 
@@ -124,7 +128,7 @@ function App() {
   }
 
   async function handleDownloadProfile() {
-    const { 'Proxy': proxies = [], 'Proxy Group': groups = [], 'Rule': rules = [] } = rawObj
+    const { [PROXY_KEY]: proxies = [], [GROUP_KEY]: groups = [], [RULE_KEY]: rules = [] } = rawObj
     let finalRules = []
     for (let rule of rules) {
       const ps = rule.split(',').map(p => p.trim())
@@ -173,7 +177,7 @@ function App() {
       }
     }
     const fileName = 'config.yml'
-    const fileContent = ymlStringify({ ...rawObj, 'Proxy': finalProxies, 'Rule': finalRules })
+    const fileContent = ymlStringify({ ...rawObj, [PROXY_KEY]: finalProxies, [RULE_KEY]: finalRules })
     if (isLocalMode) {
       const { 'status': s } = await client({
         method: "post",
@@ -201,7 +205,7 @@ function App() {
     }
   }
 
-  const { 'Proxy Group': gs = [], 'Proxy': ps = [] } = rawObj
+  const { [GROUP_KEY]: gs = [], [PROXY_KEY]: ps = [] } = rawObj
   const proxyGroupNames = gs.map((g, idx) => {
     const { use } = g
     return (

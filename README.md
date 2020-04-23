@@ -12,8 +12,8 @@ Clash配置文件在线定义
 #### 1. 编辑基础配置文件
 点击界面顶部``Raw Config``，填入如下基础配置退回主界面
 ```yaml
-Proxy: []
-Proxy Group:
+proxies: []
+proxy-groups:
   - name: UrlTest
     type: url-test
     proxies: 
@@ -42,7 +42,7 @@ Proxy Group:
     type: select
     proxies:
       - DIRECT
-Rule:
+rules:
   - RULE-SET,https://raw.githubusercontent.com/ConnersHua/Profiles/master/Surge/Ruleset/Unbreak.list,DIRECT
   - RULE-SET,https://raw.githubusercontent.com/ConnersHua/Profiles/master/Surge/Ruleset/GlobalMedia.list,GlobalMedia
   - RULE-SET,https://raw.githubusercontent.com/ConnersHua/Profiles/master/Surge/Ruleset/HKMTMedia.list,HKMTMedia
