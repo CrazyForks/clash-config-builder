@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Button, notification, Tag, message, Input, Checkbox, Badge } from 'antd'
-import { parse as ymlParse, stringify as ymlStringify } from 'yaml'
+import yaml from 'yaml'
 import { get, all, create, put } from 'axios'
 
 
@@ -59,7 +59,7 @@ function App() {
   useEffect(() => {
     let obj = {}
     try {
-      obj = ymlParse(rawConfig.value)
+      obj = yaml.parse(rawConfig.value)
     } catch{ }
     setRawObj(obj || {})
   }, [rawConfig.value])
@@ -90,7 +90,7 @@ function App() {
         }
         let yml = {}
         try {
-          yml = ymlParse(data)
+          yml = yaml.parse(data)
         } catch{ }
         const { [PROXY_KEY]: p = [] } = yml
         proxies = proxies.concat(p)
@@ -108,7 +108,7 @@ function App() {
   function handleProxiesChange(order) {
     let { [GROUP_KEY]: gs = [] } = rawObj
     gs[groupIndex].proxies = order
-    const yml = ymlStringify({ ...rawObj, [GROUP_KEY]: gs })
+    const yml = yaml.stringify({ ...rawObj, [GROUP_KEY]: gs })
     setRawConfig(yml)
   }
 
@@ -177,7 +177,7 @@ function App() {
       }
     }
     const fileName = 'config.yml'
-    const fileContent = ymlStringify({ ...rawObj, [PROXY_KEY]: finalProxies, [RULE_KEY]: finalRules })
+    const fileContent = yaml.stringify({ ...rawObj, [PROXY_KEY]: finalProxies, [RULE_KEY]: finalRules })
     if (isLocalMode) {
       const { 'status': s } = await client({
         method: "post",
