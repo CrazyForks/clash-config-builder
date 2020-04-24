@@ -76,6 +76,7 @@ function App() {
 
     setSyncBtnLoading(true)
     try {
+      const OLD_PROXY_KEY = "Proxy"
       const urls = subsURLs.value.split('\n').filter(url => /^https?:\/\//.test(url))
       const proxyURL = isLocalMode ? `http://127.0.0.1:${localPort}/proxy?url=` : "https://cloudcompute.lbyczf.com/proxy-content?url="
       const resps = await all(urls.map(url => request(`${proxyURL}${encodeURIComponent(url)}`)))
@@ -92,8 +93,8 @@ function App() {
         try {
           yml = yaml.parse(data)
         } catch{ }
-        const { [PROXY_KEY]: p = [] } = yml
-        proxies = proxies.concat(p)
+        const { [PROXY_KEY]: p, [OLD_PROXY_KEY]: op = [] } = yml
+        proxies = proxies.concat(p || op)
       })
       setSubProxies(proxies)
     } catch (e) {
