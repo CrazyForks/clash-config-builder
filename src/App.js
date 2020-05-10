@@ -60,6 +60,15 @@ function App() {
     let obj = {}
     try {
       obj = yaml.parse(rawConfig.value)
+
+      const { "Rule": rule, "Proxy Group": proxyGroup, "Proxy": proxy } = obj
+      if (rule || proxyGroup || proxy) {
+        notification.open({
+          message: 'Raw Config contains deprecated keys',
+          description: `Proxy|Proxy Group|Rule keys are not deprecated, change it to proxies|proxy-groups|rules`,
+          duration: 0,
+        })
+      }
     } catch{ }
     setRawObj(obj || {})
   }, [rawConfig.value])
